@@ -1,23 +1,31 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-
-// Credenciales fijas para el prototipo
-const ADMIN_USER = 'admin'
-const ADMIN_PASS = 'barberbook123'
+import { loginAdmin } from '../../services/api'
 
 function Login() {
   const navigate = useNavigate()
   const [usuario, setUsuario] = useState('')
   const [contrasena, setContrasena] = useState('')
   const [error, setError] = useState('')
+  const [cargando, setCargando] = useState(false)
 
-  const handleLogin = () => {
-    if (usuario === ADMIN_USER && contrasena === ADMIN_PASS) {
-      localStorage.setItem('adminSession', 'true')
-      navigate('/admin/dashboard')
-    } else {
-      setError('Usuario o contraseña incorrectos')
+  const handleLogin = async () => {
+    if (!usuario || !contrasena) {
+      setError('Por favor completa todos los campos')
+      return
     }
+
+    setCargando(true)
+    const resultado = await loginAdmin(usuario, contrasena)
+    setCargando(false)
+
+    if (resultado.error) {
+      setError(resultado.error)
+      return
+    }
+
+    localStorage.setItem('adminSession', 'true')
+    navigate('/admin/dashboard')
   }
 
   const handleKeyDown = (e) => {
@@ -60,8 +68,13 @@ function Login() {
 
         {error && <p className="login-error">{error}</p>}
 
-        <button className="btn-dorado" style={{ width: '100%', marginTop: '24px' }} onClick={handleLogin}>
-          Ingresar al Panel
+        <button
+          className={`btn-dorado ${cargando ? 'deshabilitado' : ''}`}
+          style={{ width: '100%', marginTop: '24px' }}
+          onClick={handleLogin}
+          disabled={cargando}
+        >
+          {cargando ? 'Verificando...' : 'Ingresar al Panel'}
         </button>
 
       </div>

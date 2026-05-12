@@ -1,10 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-
-const BARBEROS = [
-  { id: 1, nombre: 'Carlos Mendoza', especialidad: 'Cortes clásicos y modernos', foto: 'https://static.vecteezy.com/system/resources/previews/004/477/337/non_2x/face-young-man-in-frame-circular-avatar-character-icon-free-vector.jpg' },
-  { id: 2, nombre: 'Andrés Pérez', especialidad: 'Barba y afeitado tradicional', foto: 'https://thumbs.dreamstime.com/b/avatar-de-trabajador-circular-icono-ilustraci%C3%B3n-cuerpo-superior-persona-negocios-207816638.jpg' },
-]
+import { getBarberos, crearCita } from '../services/api'
 
 const generarFechas = () => {
   const fechas = []
@@ -63,12 +59,17 @@ function AgendarCita() {
   const servicio = state?.servicio
 
   const [paso, setPaso] = useState(1)
+  const [barberos, setBarberos] = useState([])
   const [barbero, setBarbero] = useState(null)
   const [fecha, setFecha] = useState(null)
   const [hora, setHora] = useState(null)
   const [nombre, setNombre] = useState('')
   const [telefono, setTelefono] = useState('')
   const [codigoCita, setCodigoCita] = useState('')
+
+  useEffect(() => {
+    getBarberos().then(data => setBarberos(data))
+  }, [])
 
   if (!servicio) {
     return (
@@ -81,10 +82,24 @@ function AgendarCita() {
     )
   }
 
-  const confirmarCita = () => {
+  const confirmarCita = async () => {
     if (!nombre.trim() || !telefono.trim()) return alert('Por favor completa tu nombre y teléfono.')
-    const codigo = `BB-${Date.now().toString().slice(-6)}`
-    setCodigoCita(codigo)
+
+    const resultado = await crearCita({
+      nombreCliente: nombre,
+      telefono,
+      servicioId: servicio.id,
+      barberoId: barbero.id,
+      fecha: fecha.toISOString().split('T')[0],
+      hora
+    })
+
+    if (resultado.error) {
+      alert(resultado.error)
+      return
+    }
+
+    setCodigoCita(resultado.cita.codigo)
     setPaso(4)
   }
 
@@ -102,7 +117,7 @@ function AgendarCita() {
         <div>
           <h2 className="paso-titulo">¿Con quién quieres tu cita?</h2>
           <div className="barberos-grid">
-            {BARBEROS.map(b => (
+            {barberos.map(b => (
               <div
                 key={b.id}
                 className={`barbero-card ${barbero?.id === b.id ? 'seleccionado' : ''}`}

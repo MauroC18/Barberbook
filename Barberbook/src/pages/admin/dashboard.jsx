@@ -1,54 +1,74 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { getCitas, actualizarEstadoCita, getServicios, crearServicio, actualizarServicio, eliminarServicio } from '../../services/api'
 
 const BARBEROS = [
   { id: 1, nombre: 'Carlos Mendoza' },
   { id: 2, nombre: 'Andrés Pérez' },
 ]
 
-const SERVICIOS_INICIALES = [
-  { id: 1, nombre: 'Corte de cabello', duracion: 30, precio: 15000 },
-  { id: 2, nombre: 'Arreglo de barba', duracion: 20, precio: 10000 },
-  { id: 3, nombre: 'Corte + Barba', duracion: 50, precio: 22000 },
-  { id: 4, nombre: 'Afeitado clásico', duracion: 25, precio: 12000 },
-]
-
 const ESTADOS = ['pendiente', 'confirmada', 'completada', 'cancelada']
 
 const ESTADO_ESTILOS = {
-  pendiente:   { bg: '#c9a84c22', color: '#c9a84c', label: '⏳ Pendiente' },
-  confirmada:  { bg: '#22c95522', color: '#22c955', label: '✅ Confirmada' },
-  completada:  { bg: '#2e75b622', color: '#2e75b6', label: '🏁 Completada' },
-  cancelada:   { bg: '#ff444422', color: '#ff4444', label: '❌ Cancelada' },
+  pendiente:  { bg: '#c9a84c22', color: '#c9a84c', label: '⏳ Pendiente' },
+  confirmada: { bg: '#22c95522', color: '#22c955', label: '✅ Confirmada' },
+  completada: { bg: '#2e75b622', color: '#2e75b6', label: '🏁 Completada' },
+  cancelada:  { bg: '#ff444422', color: '#ff4444', label: '❌ Cancelada' },
 }
-
-// Citas de ejemplo para el prototipo
-const CITAS_EJEMPLO = [
-  { id: 1, nombreCliente: 'Juan Pérez', telefono: '3001234567', servicioId: 1, barberoId: 1, fecha: new Date().toDateString(), hora: '09:00', estado: 'pendiente', codigo: 'BB-001' },
-  { id: 2, nombreCliente: 'Carlos López', telefono: '3109876543', servicioId: 3, barberoId: 2, fecha: new Date().toDateString(), hora: '10:00', estado: 'confirmada', codigo: 'BB-002' },
-  { id: 3, nombreCliente: 'Andrés Gómez', telefono: '3205551234', servicioId: 2, barberoId: 1, fecha: new Date().toDateString(), hora: '11:00', estado: 'pendiente', codigo: 'BB-003' },
-]
 
 function Dashboard() {
   const navigate = useNavigate()
   const [seccion, setSeccion] = useState('citas')
   const [filtroBarbero, setFiltroBarbero] = useState('todos')
-  const [citas, setCitas] = useState(() => {
-    const guardadas = localStorage.getItem('citas')
-    const citasLS = guardadas ? JSON.parse(guardadas) : []
-    return [...CITAS_EJEMPLO, ...citasLS]
-  })
-  const [servicios, setServicios] = useState(SERVICIOS_INICIALES)
+  const [citas, setCitas] = useState([])
+  const [servicios, setServicios] = useState([])
+  const [cargando, setCargando] = useState(true)
   const [nuevoServicio, setNuevoServicio] = useState({ nombre: '', duracion: '', precio: '' })
   const [editando, setEditando] = useState(null)
+
+  // Carga inicial de datos
+  useEffect(() => {
+    cargarDatos()
+  }, [])
+
+  const cargarDatos = async () => {
+    setCargando(true)
+    const [citasData, serviciosData] = await Promise.all([
+      getCitas(),
+      getServicios()
+    ])
+    setCitas(citasData)
+    setServicios(serviciosData)
+    setCargando(false)
+  }
 
   const cerrarSesion = () => {
     localStorage.removeItem('adminSession')
     navigate('/admin')
   }
 
-  const cambiarEstado = (id, nuevoEstado) => {
+  const handleCambiarEstado = async (id, nuevoEstado) => {
+    await actualizarEstadoCita(id, nuevoEstado)
+    // Actualiza el estado local sin recargar todo
     setCitas(prev => prev.map(c => c.id === id ? { ...c, estado: nuevoEstado } : c))
+  }
+
+  const handleAgregarServicio = async () => {
+    if (!nuevoServicio.nombre || !nuevoServicio.duracion || !nuevoServicio.precio) return
+    const creado = await crearServicio(nuevoServicio)
+    setServicios(prev => [...prev, creado])
+    setNuevoServicio({ nombre: '', duracion: '', precio: '' })
+  }
+
+  const handleEliminarServicio = async (id) => {
+    await eliminarServicio(id)
+    setServicios(prev => prev.filter(s => s.id !== id))
+  }
+
+  const handleGuardarEdicion = async () => {
+    const actualizado = await actualizarServicio(editando.id, editando)
+    setServicios(prev => prev.map(s => s.id === editando.id ? actualizado : s))
+    setEditando(null)
   }
 
   const citasFiltradas = citas.filter(c =>
@@ -58,21 +78,11 @@ function Dashboard() {
   const getNombreBarbero = (id) => BARBEROS.find(b => b.id === id)?.nombre || 'N/A'
   const getNombreServicio = (id) => servicios.find(s => s.id === id)?.nombre || 'N/A'
 
-  const agregarServicio = () => {
-    if (!nuevoServicio.nombre || !nuevoServicio.duracion || !nuevoServicio.precio) return
-    const nuevo = { id: Date.now(), ...nuevoServicio, duracion: Number(nuevoServicio.duracion), precio: Number(nuevoServicio.precio) }
-    setServicios(prev => [...prev, nuevo])
-    setNuevoServicio({ nombre: '', duracion: '', precio: '' })
-  }
-
-  const eliminarServicio = (id) => {
-    setServicios(prev => prev.filter(s => s.id !== id))
-  }
-
-  const guardarEdicion = () => {
-    setServicios(prev => prev.map(s => s.id === editando.id ? { ...editando, duracion: Number(editando.duracion), precio: Number(editando.precio) } : s))
-    setEditando(null)
-  }
+  if (cargando) return (
+    <div style={{ textAlign: 'center', padding: '80px', color: '#888' }}>
+      Cargando datos...
+    </div>
+  )
 
   return (
     <div className="dashboard-pagina">
@@ -115,7 +125,7 @@ function Dashboard() {
             </div>
 
             {citasFiltradas.length === 0 ? (
-              <p className="dashboard-empty">No hay citas registradas para hoy.</p>
+              <p className="dashboard-empty">No hay citas registradas.</p>
             ) : (
               <div className="citas-lista">
                 {citasFiltradas.sort((a, b) => a.hora.localeCompare(b.hora)).map(cita => (
@@ -125,6 +135,7 @@ function Dashboard() {
                       <p className="cita-cliente">{cita.nombreCliente}</p>
                       <p className="cita-detalle">📞 {cita.telefono}</p>
                       <p className="cita-detalle">✂ {getNombreServicio(cita.servicioId)} · 💈 {getNombreBarbero(cita.barberoId)}</p>
+                      <p className="cita-detalle">📅 {cita.fecha}</p>
                       <p className="cita-codigo">Código: {cita.codigo}</p>
                     </div>
                     <div className="cita-acciones">
@@ -137,7 +148,7 @@ function Dashboard() {
                       <select
                         className="estado-select"
                         value={cita.estado}
-                        onChange={e => cambiarEstado(cita.id, e.target.value)}
+                        onChange={e => handleCambiarEstado(cita.id, e.target.value)}
                       >
                         {ESTADOS.map(e => <option key={e} value={e}>{e}</option>)}
                       </select>
@@ -185,6 +196,7 @@ function Dashboard() {
                       <p className="cita-cliente">{cita.nombreCliente}</p>
                       <p className="cita-detalle">✂ {getNombreServicio(cita.servicioId)}</p>
                       <p className="cita-detalle">📞 {cita.telefono}</p>
+                      <p className="cita-detalle">📅 {cita.fecha}</p>
                     </div>
                     <div className="cita-acciones">
                       <span className="estado-badge" style={{
@@ -196,7 +208,7 @@ function Dashboard() {
                       <select
                         className="estado-select"
                         value={cita.estado}
-                        onChange={e => cambiarEstado(cita.id, e.target.value)}
+                        onChange={e => handleCambiarEstado(cita.id, e.target.value)}
                       >
                         {ESTADOS.map(e => <option key={e} value={e}>{e}</option>)}
                       </select>
@@ -239,7 +251,7 @@ function Dashboard() {
                   value={nuevoServicio.precio}
                   onChange={e => setNuevoServicio({ ...nuevoServicio, precio: e.target.value })}
                 />
-                <button className="btn-dorado" onClick={agregarServicio}>+ Agregar</button>
+                <button className="btn-dorado" onClick={handleAgregarServicio}>+ Agregar</button>
               </div>
             </div>
 
@@ -253,7 +265,7 @@ function Dashboard() {
                       <input className="input-field" type="number" value={editando.duracion} onChange={e => setEditando({ ...editando, duracion: e.target.value })} />
                       <input className="input-field" type="number" value={editando.precio} onChange={e => setEditando({ ...editando, precio: e.target.value })} />
                       <div className="btn-group">
-                        <button className="btn-dorado" onClick={guardarEdicion}>Guardar</button>
+                        <button className="btn-dorado" onClick={handleGuardarEdicion}>Guardar</button>
                         <button className="btn-outline" onClick={() => setEditando(null)}>Cancelar</button>
                       </div>
                     </div>
@@ -265,7 +277,7 @@ function Dashboard() {
                       </div>
                       <div className="cita-acciones">
                         <button className="btn-outline" style={{ padding: '8px 16px', fontSize: '13px' }} onClick={() => setEditando(s)}>✏ Editar</button>
-                        <button className="btn-eliminar" onClick={() => eliminarServicio(s.id)}>🗑 Eliminar</button>
+                        <button className="btn-eliminar" onClick={() => handleEliminarServicio(s.id)}>🗑 Eliminar</button>
                       </div>
                     </>
                   )}
