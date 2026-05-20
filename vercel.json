@@ -1,8 +1,7 @@
 {
   "version": 2,
-  "buildCommand": "cd Barberbook && npm install && npm run build",
+  "buildCommand": "npm run build",
   "outputDirectory": "Barberbook/dist",
-  "devCommand": "cd Barberbook && npm run dev",
   "framework": null,
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
