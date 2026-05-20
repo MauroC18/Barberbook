@@ -1,0 +1,13 @@
+{
+  "name": "barberbook",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "cd Barberbook && npm run dev",
+    "build": "cd Barberbook && npm install && npm run build"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "prisma": "^5.22.0"
+  }
+}

@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:3000/api'
+const BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
 // ── SERVICIOS ──────────────────────────────
 export const getServicios = async () => {
@@ -61,17 +61,25 @@ export const actualizarEstadoCita = async (id, estado) => {
   return res.json()
 }
 
-// ── AUTH ───────────────────────────────────
-export const loginAdmin = async (usuario, contrasena) => {
-  const res = await fetch(`${BASE_URL}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ usuario, contrasena })
+export const getDisponibilidad = async (barberoId, fecha) => {
+  const res = await fetch(`${BASE_URL}/citas/disponibilidad?barberoId=${barberoId}&fecha=${fecha}`)
+  return res.json()
+}
+
+export const cancelarCita = async (codigo) => {
+  const res = await fetch(`${BASE_URL}/citas/cancelar/${codigo}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' }
   })
   return res.json()
 }
 
-export const getDisponibilidad = async (barberoId, fecha) => {
-  const res = await fetch(`${BASE_URL}/citas/disponibilidad?barberoId=${barberoId}&fecha=${fecha}`)
+// ── AUTH ───────────────────────────────────
+export const loginAdmin = async (usuario, contrasena) => {
+  const res = await fetch(`${BASE_URL}/auth`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ usuario, contrasena })
+  })
   return res.json()
 }
