@@ -1,11 +1,7 @@
 import { Request, Response } from 'express'
-import fs from 'fs'
-import path from 'path'
+import prisma from '../prismaClient'
 
-const dbPath = path.join(__dirname, '../data/db.json')
-const leerDB = () => JSON.parse(fs.readFileSync(dbPath, 'utf-8'))
-
-export const getBarberos = (req: Request, res: Response) => {
-  const db = leerDB()
-  res.json(db.barberos)
+export const getBarberos = async (req: Request, res: Response) => {
+  const barberos = await prisma.barbero.findMany()
+  res.json(barberos)
 }

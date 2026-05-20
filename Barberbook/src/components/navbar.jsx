@@ -9,7 +9,7 @@ function Navbar() {
       <Link to="/"><span className="navbar-logo">✂ BARBERBOOK</span></Link>
       <ul className="navbar-links">
         <li>
-          <Link to="/" className={`navbar-link ${pathname === '/' ? 'activo' : 'inactivo'}`}>
+          <Link to="/inicio" className={`navbar-link ${pathname === '/inicio' ? 'activo' : 'inactivo'}`}>
             Inicio
           </Link>
         </li>

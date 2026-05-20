@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { getBarberos, crearCita } from '../services/api'
+import { getBarberos, crearCita, getDisponibilidad } from '../services/api'
 
 const generarFechas = () => {
   const fechas = []
@@ -12,15 +12,6 @@ const generarFechas = () => {
     if (fechas.length === 12) break
   }
   return fechas
-}
-
-const generarHorarios = () => {
-  const slots = []
-  for (let h = 9; h < 20; h++) {
-    slots.push(`${String(h).padStart(2, '0')}:00`)
-    slots.push(`${String(h).padStart(2, '0')}:30`)
-  }
-  return slots.filter(s => s <= '19:30')
 }
 
 const DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
@@ -66,6 +57,8 @@ function AgendarCita() {
   const [nombre, setNombre] = useState('')
   const [telefono, setTelefono] = useState('')
   const [codigoCita, setCodigoCita] = useState('')
+  const [horasDisponibles, setHorasDisponibles] = useState([])
+  const [cargandoHoras, setCargandoHoras] = useState(false)
 
   useEffect(() => {
     getBarberos().then(data => setBarberos(data))
@@ -101,6 +94,20 @@ function AgendarCita() {
 
     setCodigoCita(resultado.cita.codigo)
     setPaso(4)
+  }
+
+  const handleSeleccionarFecha = (f) => {
+    setFecha(f)
+    setHora(null)
+    setHorasDisponibles([])
+    if (barbero) {
+      setCargandoHoras(true)
+      getDisponibilidad(barbero.id, f.toISOString().split('T')[0])
+        .then(data => {
+          setHorasDisponibles(data.horasDisponibles)
+          setCargandoHoras(false)
+        })
+    }
   }
 
   return (
@@ -143,7 +150,7 @@ function AgendarCita() {
               <button
                 key={i}
                 className={`fecha-btn ${fecha?.toDateString() === f.toDateString() ? 'seleccionado' : ''}`}
-                onClick={() => { setFecha(f); setHora(null) }}
+                onClick={() => handleSeleccionarFecha(f)}
               >
                 <div className="fecha-dia">{DIAS[f.getDay()]}</div>
                 <div className="fecha-numero">{f.getDate()}</div>
@@ -156,10 +163,12 @@ function AgendarCita() {
             <>
               <p className="paso-label-seccion">Selecciona una hora</p>
               <div className="horarios-container">
-                {generarHorarios().length === 0 ? (
-                  <p className="sin-horarios">⚠️ No hay horarios disponibles.</p>
+                {cargandoHoras ? (
+                  <p className="sin-horarios">⏳ Cargando horarios...</p>
+                ) : horasDisponibles.length === 0 ? (
+                  <p className="sin-horarios">⚠️ No hay horarios disponibles para este día.</p>
                 ) : (
-                  generarHorarios().map(h => (
+                  horasDisponibles.map(h => (
                     <button
                       key={h}
                       className={`hora-btn ${hora === h ? 'seleccionado' : ''}`}

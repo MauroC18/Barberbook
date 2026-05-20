@@ -20,13 +20,14 @@ function Dashboard() {
   const navigate = useNavigate()
   const [seccion, setSeccion] = useState('citas')
   const [filtroBarbero, setFiltroBarbero] = useState('todos')
+  const [filtroFecha, setFiltroFecha] = useState('')
+  const [filtroEstado, setFiltroEstado] = useState('todos')
   const [citas, setCitas] = useState([])
   const [servicios, setServicios] = useState([])
   const [cargando, setCargando] = useState(true)
   const [nuevoServicio, setNuevoServicio] = useState({ nombre: '', duracion: '', precio: '' })
   const [editando, setEditando] = useState(null)
 
-  // Carga inicial de datos
   useEffect(() => {
     cargarDatos()
   }, [])
@@ -44,12 +45,11 @@ function Dashboard() {
 
   const cerrarSesion = () => {
     localStorage.removeItem('adminSession')
-    navigate('/admin')
+    navigate('/')
   }
 
   const handleCambiarEstado = async (id, nuevoEstado) => {
     await actualizarEstadoCita(id, nuevoEstado)
-    // Actualiza el estado local sin recargar todo
     setCitas(prev => prev.map(c => c.id === id ? { ...c, estado: nuevoEstado } : c))
   }
 
@@ -71,9 +71,12 @@ function Dashboard() {
     setEditando(null)
   }
 
-  const citasFiltradas = citas.filter(c =>
-    filtroBarbero === 'todos' ? true : c.barberoId === Number(filtroBarbero)
-  )
+  const citasFiltradas = citas.filter(c => {
+    const porBarbero = filtroBarbero === 'todos' || c.barberoId === Number(filtroBarbero)
+    const porFecha = filtroFecha === '' || c.fecha === filtroFecha
+    const porEstado = filtroEstado === 'todos' || c.estado === filtroEstado
+    return porBarbero && porFecha && porEstado
+  })
 
   const getNombreBarbero = (id) => BARBEROS.find(b => b.id === id)?.nombre || 'N/A'
   const getNombreServicio = (id) => servicios.find(s => s.id === id)?.nombre || 'N/A'
@@ -91,7 +94,6 @@ function Dashboard() {
       <aside className="dashboard-sidebar">
         <div className="sidebar-logo">✂ BarberBook</div>
         <p className="sidebar-rol">Administrador</p>
-
         <nav className="sidebar-nav">
           {[
             { id: 'citas', label: '📋 Citas del día' },
@@ -107,25 +109,51 @@ function Dashboard() {
             </button>
           ))}
         </nav>
-
         <button className="sidebar-logout" onClick={cerrarSesion}>
           🚪 Cerrar Sesión
         </button>
       </aside>
 
-      {/* Contenido principal */}
       <main className="dashboard-main">
 
-        {/* ── SECCIÓN: Citas del día ── */}
+        {/* ── SECCIÓN: Citas ── */}
         {seccion === 'citas' && (
           <div>
             <div className="dashboard-header">
-              <h2 className="dashboard-titulo">Citas del Día</h2>
+              <h2 className="dashboard-titulo">Citas</h2>
               <span className="dashboard-badge">{citasFiltradas.length} citas</span>
             </div>
 
+            <div className="filtros-container">
+              <input
+                type="date"
+                className="filtro-fecha"
+                value={filtroFecha}
+                onChange={e => setFiltroFecha(e.target.value)}
+              />
+              <select
+                className="filtro-select"
+                value={filtroEstado}
+                onChange={e => setFiltroEstado(e.target.value)}
+              >
+                <option value="todos">Todos los estados</option>
+                <option value="pendiente">⏳ Pendiente</option>
+                <option value="confirmada">✅ Confirmada</option>
+                <option value="completada">🏁 Completada</option>
+                <option value="cancelada">❌ Cancelada</option>
+              </select>
+              {(filtroFecha || filtroEstado !== 'todos') && (
+                <button
+                  className="filtro-limpiar"
+                  onClick={() => { setFiltroFecha(''); setFiltroEstado('todos') }}
+                >
+                  ✕ Limpiar
+                </button>
+              )}
+            </div>
+
             {citasFiltradas.length === 0 ? (
-              <p className="dashboard-empty">No hay citas registradas.</p>
+              <p className="dashboard-empty">No hay citas con estos filtros.</p>
             ) : (
               <div className="citas-lista">
                 {citasFiltradas.sort((a, b) => a.hora.localeCompare(b.hora)).map(cita => (
@@ -166,7 +194,6 @@ function Dashboard() {
             <div className="dashboard-header">
               <h2 className="dashboard-titulo">Citas por Barbero</h2>
             </div>
-
             <div className="filtro-barberos">
               <button
                 className={`filtro-btn ${filtroBarbero === 'todos' ? 'activo' : ''}`}
@@ -184,7 +211,6 @@ function Dashboard() {
                 </button>
               ))}
             </div>
-
             {citasFiltradas.length === 0 ? (
               <p className="dashboard-empty">No hay citas para este barbero.</p>
             ) : (
@@ -226,8 +252,6 @@ function Dashboard() {
             <div className="dashboard-header">
               <h2 className="dashboard-titulo">Gestionar Servicios</h2>
             </div>
-
-            {/* Formulario agregar */}
             <div className="servicio-form-card">
               <p className="paso-label-seccion">Agregar nuevo servicio</p>
               <div className="servicio-form-grid">
@@ -254,8 +278,6 @@ function Dashboard() {
                 <button className="btn-dorado" onClick={handleAgregarServicio}>+ Agregar</button>
               </div>
             </div>
-
-            {/* Lista de servicios */}
             <div className="citas-lista">
               {servicios.map(s => (
                 <div key={s.id} className="cita-card">

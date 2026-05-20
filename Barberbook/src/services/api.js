@@ -70,3 +70,8 @@ export const loginAdmin = async (usuario, contrasena) => {
   })
   return res.json()
 }
+
+export const getDisponibilidad = async (barberoId, fecha) => {
+  const res = await fetch(`${BASE_URL}/citas/disponibilidad?barberoId=${barberoId}&fecha=${fecha}`)
+  return res.json()
+}

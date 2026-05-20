@@ -1,45 +1,34 @@
 import { Request, Response } from 'express'
-import fs from 'fs'
-import path from 'path'
+import prisma from '../prismaClient'
 
-const dbPath = path.join(__dirname, '../data/db.json')
-const leerDB = () => JSON.parse(fs.readFileSync(dbPath, 'utf-8'))
-const guardarDB = (data: any) => fs.writeFileSync(dbPath, JSON.stringify(data, null, 2))
-
-export const getServicios = (req: Request, res: Response) => {
-  const db = leerDB()
-  res.json(db.servicios)
+export const getServicios = async (req: Request, res: Response) => {
+  const servicios = await prisma.servicio.findMany()
+  res.json(servicios)
 }
 
-export const crearServicio = (req: Request, res: Response) => {
+export const crearServicio = async (req: Request, res: Response) => {
   const { nombre, duracion, precio } = req.body
   if (!nombre || !duracion || !precio) {
     return res.status(400).json({ error: 'Faltan campos obligatorios' })
   }
-  const db = leerDB()
-  const nuevo = { id: Date.now(), nombre, duracion: Number(duracion), precio: Number(precio) }
-  db.servicios.push(nuevo)
-  guardarDB(db)
+  const nuevo = await prisma.servicio.create({
+    data: { nombre, duracion: Number(duracion), precio: Number(precio) }
+  })
   res.status(201).json(nuevo)
 }
 
-export const actualizarServicio = (req: Request, res: Response) => {
+export const actualizarServicio = async (req: Request, res: Response) => {
   const { id } = req.params
   const { nombre, duracion, precio } = req.body
-  const db = leerDB()
-  const index = db.servicios.findIndex((s: any) => s.id === Number(id))
-  if (index === -1) return res.status(404).json({ error: 'Servicio no encontrado' })
-  db.servicios[index] = { id: Number(id), nombre, duracion: Number(duracion), precio: Number(precio) }
-  guardarDB(db)
-  res.json(db.servicios[index])
+  const actualizado = await prisma.servicio.update({
+    where: { id: Number(id) },
+    data: { nombre, duracion: Number(duracion), precio: Number(precio) }
+  })
+  res.json(actualizado)
 }
 
-export const eliminarServicio = (req: Request, res: Response) => {
+export const eliminarServicio = async (req: Request, res: Response) => {
   const { id } = req.params
-  const db = leerDB()
-  const index = db.servicios.findIndex((s: any) => s.id === Number(id))
-  if (index === -1) return res.status(404).json({ error: 'Servicio no encontrado' })
-  db.servicios.splice(index, 1)
-  guardarDB(db)
+  await prisma.servicio.delete({ where: { id: Number(id) } })
   res.json({ mensaje: 'Servicio eliminado correctamente' })
 }
