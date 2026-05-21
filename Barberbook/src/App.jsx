@@ -1,11 +1,11 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import Login from './pages/admin/Login'
+import Login from './pages/admin/login'
 import Home from './pages/home'
 import Servicios from './pages/servicios'
 import AgendarCita from './pages/agendar_cita'
-import Dashboard from './pages/admin/Dashboard'
-import RutaProtegida from './components/RutaProtegida'
-import Navbar from './components/Navbar'
+import Dashboard from './pages/admin/dashboard'
+import RutaProtegida from './components/rutaprotegida'
+import Navbar from './components/navbar'
 
 function App() {
   return (
