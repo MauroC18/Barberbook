@@ -83,3 +83,11 @@ export const loginAdmin = async (usuario, contrasena) => {
   })
   return res.json()
 }
+
+export const eliminarCita = async (id) => {
+  const res = await fetch(`${BASE_URL}/citas/${id}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' }
+  })
+  return res.json()
+}

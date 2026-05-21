@@ -1667,3 +1667,44 @@ img {
   background-color: #ff444415;
   border-color: var(--danger);
 }
+
+/* ============================================
+   CALENDARIO
+   ============================================ */
+
+.calendario-container {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.calendario-dia {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.calendario-fecha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background-color: var(--bg-hover);
+  border-bottom: 1px solid var(--border);
+}
+
+.calendario-fecha-texto {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--gold);
+  text-transform: capitalize;
+}
+
+.calendario-dia .citas-lista {
+  padding: 16px;
+}
+
+.calendario-dia .cita-card {
+  background-color: var(--bg-secondary);
+}

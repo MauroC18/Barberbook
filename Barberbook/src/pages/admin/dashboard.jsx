@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getCitas, actualizarEstadoCita, getServicios, crearServicio, actualizarServicio, eliminarServicio } from '../../services/api'
+import { getCitas, actualizarEstadoCita, getServicios, crearServicio, actualizarServicio, eliminarServicio, eliminarCita } from '../../services/api'
 
 const BARBEROS = [
   { id: 1, nombre: 'Carlos Mendoza' },
@@ -71,12 +71,32 @@ function Dashboard() {
     setEditando(null)
   }
 
-  const citasFiltradas = citas.filter(c => {
-    const porBarbero = filtroBarbero === 'todos' || c.barberoId === Number(filtroBarbero)
-    const porFecha = filtroFecha === '' || c.fecha === filtroFecha
-    const porEstado = filtroEstado === 'todos' || c.estado === filtroEstado
-    return porBarbero && porFecha && porEstado
-  })
+const ahora = new Date()
+const fechaHoy = ahora.toISOString().split('T')[0]
+const horaAhora = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`
+
+const citasActivas = citas.filter(c => {
+  // Ocultar canceladas
+  if (c.estado === 'cancelada') return false
+  // Ocultar completadas y las que ya pasaron
+  if (c.estado === 'completada') return false
+  if (c.fecha < fechaHoy) return false
+  if (c.fecha === fechaHoy && c.hora < horaAhora) return false
+  return true
+})
+
+const citasFiltradas = citasActivas.filter(c => {
+  const porBarbero = filtroBarbero === 'todos' || c.barberoId === Number(filtroBarbero)
+  const porFecha = filtroFecha === '' || c.fecha === filtroFecha
+  const porEstado = filtroEstado === 'todos' || c.estado === filtroEstado
+  return porBarbero && porFecha && porEstado
+})
+
+  const handleEliminarCita = async (id) => {
+    if (!window.confirm('¿Estás seguro de eliminar esta cita?')) return
+    await eliminarCita(id)
+    setCitas(prev => prev.filter(c => c.id !== id))
+  }
 
   const getNombreBarbero = (id) => BARBEROS.find(b => b.id === id)?.nombre || 'N/A'
   const getNombreServicio = (id) => servicios.find(s => s.id === id)?.nombre || 'N/A'
@@ -99,6 +119,7 @@ function Dashboard() {
             { id: 'citas', label: '📋 Citas del día' },
             { id: 'barberos', label: '💈 Por barbero' },
             { id: 'servicios', label: '✂ Servicios' },
+            { id: 'calendario', label: '📅 Calendario' },
           ].map(item => (
             <button
               key={item.id}
@@ -124,67 +145,150 @@ function Dashboard() {
               <span className="dashboard-badge">{citasFiltradas.length} citas</span>
             </div>
 
-            <div className="filtros-container">
-              <input
-                type="date"
-                className="filtro-fecha"
-                value={filtroFecha}
-                onChange={e => setFiltroFecha(e.target.value)}
-              />
-              <select
-                className="filtro-select"
-                value={filtroEstado}
-                onChange={e => setFiltroEstado(e.target.value)}
+          <div className="filtros-container">
+            <input
+            type="date"
+            className="filtro-fecha"
+            value={filtroFecha}
+            onChange={e => setFiltroFecha(e.target.value)}
+            />
+            <select
+              className="filtro-select"
+              value={filtroEstado}
+              onChange={e => setFiltroEstado(e.target.value)}
+            >
+              <option value="todos">Todos los estados</option>
+              <option value="pendiente">⏳ Pendiente</option>
+              <option value="confirmada">✅ Confirmada</option>
+              <option value="completada">🏁 Completada</option>
+              <option value="cancelada">❌ Cancelada</option>
+            </select>
+            {(filtroFecha || filtroEstado !== 'todos') && (
+              <button
+                className="filtro-limpiar"
+                onClick={() => { setFiltroFecha(''); setFiltroEstado('todos') }}
               >
-                <option value="todos">Todos los estados</option>
-                <option value="pendiente">⏳ Pendiente</option>
-                <option value="confirmada">✅ Confirmada</option>
-                <option value="completada">🏁 Completada</option>
-                <option value="cancelada">❌ Cancelada</option>
-              </select>
-              {(filtroFecha || filtroEstado !== 'todos') && (
-                <button
-                  className="filtro-limpiar"
-                  onClick={() => { setFiltroFecha(''); setFiltroEstado('todos') }}
-                >
-                  ✕ Limpiar
-                </button>
-              )}
+                ✕ Limpiar
+              </button>
+            )}
+          </div>
+          
+          {citasFiltradas.length === 0 ? (
+            <p className="dashboard-empty">No hay citas con estos filtros.</p>
+          ) : (
+            <div className="citas-lista">
+              {citasFiltradas.sort((a, b) => a.hora.localeCompare(b.hora)).map(cita => (
+                <div key={cita.id} className="cita-card">
+                  <div className="cita-hora">{cita.hora}</div>
+                  <div className="cita-info">
+                    <p className="cita-cliente">{cita.nombreCliente}</p>
+                    <p className="cita-detalle">📞 {cita.telefono}</p>
+                    <p className="cita-detalle">✂ {getNombreServicio(cita.servicioId)} · 💈 {getNombreBarbero(cita.barberoId)}</p>
+                    <p className="cita-detalle">📅 {cita.fecha}</p>
+                    <p className="cita-codigo">Código: {cita.codigo}</p>
+                  </div>
+                  <div className="cita-acciones">
+                    <span className="estado-badge" style={{
+                      backgroundColor: ESTADO_ESTILOS[cita.estado].bg,
+                      color: ESTADO_ESTILOS[cita.estado].color,
+                    }}>
+                      {ESTADO_ESTILOS[cita.estado].label}
+                    </span>
+                    <select
+                    className="estado-select"
+                    value={cita.estado}
+                    onChange={e => handleCambiarEstado(cita.id, e.target.value)}
+                    >
+                      {ESTADOS.map(e => <option key={e} value={e}>{e}</option>)}
+                    </select>
+                    <button
+                    className="btn-eliminar"
+                    onClick={() => handleEliminarCita(cita.id)}
+                    >
+                      🗑 Eliminar
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
-
-            {citasFiltradas.length === 0 ? (
-              <p className="dashboard-empty">No hay citas con estos filtros.</p>
-            ) : (
-              <div className="citas-lista">
-                {citasFiltradas.sort((a, b) => a.hora.localeCompare(b.hora)).map(cita => (
-                  <div key={cita.id} className="cita-card">
-                    <div className="cita-hora">{cita.hora}</div>
-                    <div className="cita-info">
-                      <p className="cita-cliente">{cita.nombreCliente}</p>
-                      <p className="cita-detalle">📞 {cita.telefono}</p>
-                      <p className="cita-detalle">✂ {getNombreServicio(cita.servicioId)} · 💈 {getNombreBarbero(cita.barberoId)}</p>
-                      <p className="cita-detalle">📅 {cita.fecha}</p>
-                      <p className="cita-codigo">Código: {cita.codigo}</p>
-                    </div>
-                    <div className="cita-acciones">
-                      <span className="estado-badge" style={{
-                        backgroundColor: ESTADO_ESTILOS[cita.estado].bg,
-                        color: ESTADO_ESTILOS[cita.estado].color,
-                      }}>
-                        {ESTADO_ESTILOS[cita.estado].label}
-                      </span>
-                      <select
-                        className="estado-select"
-                        value={cita.estado}
-                        onChange={e => handleCambiarEstado(cita.id, e.target.value)}
-                      >
-                        {ESTADOS.map(e => <option key={e} value={e}>{e}</option>)}
-                      </select>
+          )}
+        </div>
+      )}
+      
+        {seccion === 'calendario' && (
+          <div>
+            <div className="dashboard-header">
+              <h2 className="dashboard-titulo">Calendario de Citas</h2>
+          </div>
+          
+          <div className="calendario-container">
+            {(() => {
+              const citasPorFecha = {}
+              citas
+                .filter(c => c.estado !== 'cancelada' && c.estado !== 'completada')
+                .forEach(c => {
+                  if (!citasPorFecha[c.fecha]) citasPorFecha[c.fecha] = []
+                  citasPorFecha[c.fecha].push(c)
+                })
+                
+              const fechasOrdenadas = Object.keys(citasPorFecha).sort()
+              
+              if (fechasOrdenadas.length === 0) {
+                return <p className="dashboard-empty">No hay citas próximas.</p>
+              }
+              
+              return fechasOrdenadas.map(fecha => (
+                <div key={fecha} className="calendario-dia">
+                  <div className="calendario-fecha">
+                    <span className="calendario-fecha-texto">
+                      📅 {new Date(fecha + 'T12:00:00').toLocaleDateString('es-CO', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </span>
+                    <span className="dashboard-badge">{citasPorFecha[fecha].length} citas</span>
+                  </div>
+                  <div className="citas-lista">
+                    {citasPorFecha[fecha]
+                      .sort((a, b) => a.hora.localeCompare(b.hora))
+                      .map(cita => (
+                        <div key={cita.id} className="cita-card">
+                          <div className="cita-hora">{cita.hora}</div>
+                          <div className="cita-info">
+                            <p className="cita-cliente">{cita.nombreCliente}</p>
+                            <p className="cita-detalle">✂ {getNombreServicio(cita.servicioId)} · 💈 {getNombreBarbero(cita.barberoId)}</p>
+                            <p className="cita-detalle">📞 {cita.telefono}</p>
+                          </div>
+                          <div className="cita-acciones">
+                            <span className="estado-badge" style={{
+                              backgroundColor: ESTADO_ESTILOS[cita.estado].bg,
+                              color: ESTADO_ESTILOS[cita.estado].color,
+                            }}>
+                              {ESTADO_ESTILOS[cita.estado].label}
+                            </span>
+                            <select
+                              className="estado-select"
+                              value={cita.estado}
+                              onChange={e => handleCambiarEstado(cita.id, e.target.value)}
+                            >
+                              {ESTADOS.map(e => <option key={e} value={e}>{e}</option>)}
+                            </select>
+                            <button
+                              className="btn-eliminar"
+                              onClick={() => handleEliminarCita(cita.id)}
+                            >
+                              🗑
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+                ))
+              })()}
+            </div>
           </div>
         )}
 
