@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getCitas, actualizarEstadoCita, getServicios, crearServicio, actualizarServicio, eliminarServicio, eliminarCita } from '../../services/api'
 
+// ── CONSTANTES GLOBALES ──
 const BARBEROS = [
   { id: 1, nombre: 'Carlos Mendoza' },
   { id: 2, nombre: 'Andrés Pérez' },
@@ -10,12 +11,20 @@ const BARBEROS = [
 const ESTADOS = ['pendiente', 'confirmada', 'completada', 'cancelada']
 
 const ESTADO_ESTILOS = {
-  pendiente:  { bg: '#c9a84c22', color: '#c9a84c', label: '⏳ Pendiente' },
+  pendiente: { bg: '#c9a84c22', color: '#c9a84c', label: '⏳ Pendiente' },
   confirmada: { bg: '#22c95522', color: '#22c955', label: '✅ Confirmada' },
   completada: { bg: '#2e75b622', color: '#2e75b6', label: '🏁 Completada' },
-  cancelada:  { bg: '#ff444422', color: '#ff4444', label: '❌ Cancelada' },
+  cancelada: { bg: '#ff444422', color: '#ff4444', label: '❌ Cancelada' },
 }
 
+const MESES = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+]
+
+const DIAS_SEMANA = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+
+// ── COMPONENTE PRINCIPAL ──
 function Dashboard() {
   const navigate = useNavigate()
   const [seccion, setSeccion] = useState('citas')
@@ -71,27 +80,6 @@ function Dashboard() {
     setEditando(null)
   }
 
-const ahora = new Date()
-const fechaHoy = ahora.toISOString().split('T')[0]
-const horaAhora = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`
-
-const citasActivas = citas.filter(c => {
-  // Ocultar canceladas
-  if (c.estado === 'cancelada') return false
-  // Ocultar completadas y las que ya pasaron
-  if (c.estado === 'completada') return false
-  if (c.fecha < fechaHoy) return false
-  if (c.fecha === fechaHoy && c.hora < horaAhora) return false
-  return true
-})
-
-const citasFiltradas = citasActivas.filter(c => {
-  const porBarbero = filtroBarbero === 'todos' || c.barberoId === Number(filtroBarbero)
-  const porFecha = filtroFecha === '' || c.fecha === filtroFecha
-  const porEstado = filtroEstado === 'todos' || c.estado === filtroEstado
-  return porBarbero && porFecha && porEstado
-})
-
   const handleEliminarCita = async (id) => {
     if (!window.confirm('¿Estás seguro de eliminar esta cita?')) return
     await eliminarCita(id)
@@ -100,6 +88,26 @@ const citasFiltradas = citasActivas.filter(c => {
 
   const getNombreBarbero = (id) => BARBEROS.find(b => b.id === id)?.nombre || 'N/A'
   const getNombreServicio = (id) => servicios.find(s => s.id === id)?.nombre || 'N/A'
+
+  // Fechas y lógica para la sección de "Citas del día"
+  const ahora = new Date()
+  const fechaHoy = ahora.toISOString().split('T')[0]
+  const horaAhora = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`
+
+  const citasActivas = citas.filter(c => {
+    if (c.estado === 'cancelada') return false
+    if (c.estado === 'completada') return false
+    if (c.fecha < fechaHoy) return false
+    if (c.fecha === fechaHoy && c.hora < horaAhora) return false
+    return true
+  })
+
+  const citasFiltradas = citasActivas.filter(c => {
+    const porBarbero = filtroBarbero === 'todos' || c.barberoId === Number(filtroBarbero)
+    const porFecha = filtroFecha === '' || c.fecha === filtroFecha
+    const porEstado = filtroEstado === 'todos' || c.estado === filtroEstado
+    return porBarbero && porFecha && porEstado
+  })
 
   if (cargando) return (
     <div style={{ textAlign: 'center', padding: '80px', color: '#888' }}>
@@ -145,149 +153,92 @@ const citasFiltradas = citasActivas.filter(c => {
               <span className="dashboard-badge">{citasFiltradas.length} citas</span>
             </div>
 
-          <div className="filtros-container">
-            <input
-            type="date"
-            className="filtro-fecha"
-            value={filtroFecha}
-            onChange={e => setFiltroFecha(e.target.value)}
-            />
-            <select
-              className="filtro-select"
-              value={filtroEstado}
-              onChange={e => setFiltroEstado(e.target.value)}
-            >
-              <option value="todos">Todos los estados</option>
-              <option value="pendiente">⏳ Pendiente</option>
-              <option value="confirmada">✅ Confirmada</option>
-              <option value="completada">🏁 Completada</option>
-              <option value="cancelada">❌ Cancelada</option>
-            </select>
-            {(filtroFecha || filtroEstado !== 'todos') && (
-              <button
-                className="filtro-limpiar"
-                onClick={() => { setFiltroFecha(''); setFiltroEstado('todos') }}
+            <div className="filtros-container">
+              <input
+                type="date"
+                className="filtro-fecha"
+                value={filtroFecha}
+                onChange={e => setFiltroFecha(e.target.value)}
+              />
+              <select
+                className="filtro-select"
+                value={filtroEstado}
+                onChange={e => setFiltroEstado(e.target.value)}
               >
-                ✕ Limpiar
-              </button>
+                <option value="todos">Todos los estados</option>
+                <option value="pendiente">⏳ Pendiente</option>
+                <option value="confirmada">✅ Confirmada</option>
+                <option value="completada">🏁 Completada</option>
+                <option value="cancelada">❌ Cancelada</option>
+              </select>
+              {(filtroFecha || filtroEstado !== 'todos') && (
+                <button
+                  className="filtro-limpiar"
+                  onClick={() => { setFiltroFecha(''); setFiltroEstado('todos') }}
+                >
+                  ✕ Limpiar
+                </button>
+              )}
+            </div>
+
+            {citasFiltradas.length === 0 ? (
+              <p className="dashboard-empty">No hay citas con estos filtros.</p>
+            ) : (
+              <div className="citas-lista">
+                {citasFiltradas.sort((a, b) => a.hora.localeCompare(b.hora)).map(cita => (
+                  <div key={cita.id} className="cita-card">
+                    <div className="cita-hora">{cita.hora}</div>
+                    <div className="cita-info">
+                      <p className="cita-cliente">{cita.nombreCliente}</p>
+                      <p className="cita-detalle">📞 {cita.telefono}</p>
+                      <p className="cita-detalle">✂ {getNombreServicio(cita.servicioId)} · 💈 {getNombreBarbero(cita.barberoId)}</p>
+                      <p className="cita-detalle">📅 {cita.fecha}</p>
+                      <p className="cita-codigo">Código: {cita.codigo}</p>
+                    </div>
+                    <div className="cita-acciones">
+                      <span className="estado-badge" style={{
+                        backgroundColor: ESTADO_ESTILOS[cita.estado].bg,
+                        color: ESTADO_ESTILOS[cita.estado].color,
+                      }}>
+                        {ESTADO_ESTILOS[cita.estado].label}
+                      </span>
+                      <select
+                        className="estado-select"
+                        value={cita.estado}
+                        onChange={e => handleCambiarEstado(cita.id, e.target.value)}
+                      >
+                        {ESTADOS.map(e => <option key={e} value={e}>{e}</option>)}
+                      </select>
+                      <button
+                        className="btn-eliminar"
+                        onClick={() => handleEliminarCita(cita.id)}
+                      >
+                        🗑 Eliminar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
-          
-          {citasFiltradas.length === 0 ? (
-            <p className="dashboard-empty">No hay citas con estos filtros.</p>
-          ) : (
-            <div className="citas-lista">
-              {citasFiltradas.sort((a, b) => a.hora.localeCompare(b.hora)).map(cita => (
-                <div key={cita.id} className="cita-card">
-                  <div className="cita-hora">{cita.hora}</div>
-                  <div className="cita-info">
-                    <p className="cita-cliente">{cita.nombreCliente}</p>
-                    <p className="cita-detalle">📞 {cita.telefono}</p>
-                    <p className="cita-detalle">✂ {getNombreServicio(cita.servicioId)} · 💈 {getNombreBarbero(cita.barberoId)}</p>
-                    <p className="cita-detalle">📅 {cita.fecha}</p>
-                    <p className="cita-codigo">Código: {cita.codigo}</p>
-                  </div>
-                  <div className="cita-acciones">
-                    <span className="estado-badge" style={{
-                      backgroundColor: ESTADO_ESTILOS[cita.estado].bg,
-                      color: ESTADO_ESTILOS[cita.estado].color,
-                    }}>
-                      {ESTADO_ESTILOS[cita.estado].label}
-                    </span>
-                    <select
-                    className="estado-select"
-                    value={cita.estado}
-                    onChange={e => handleCambiarEstado(cita.id, e.target.value)}
-                    >
-                      {ESTADOS.map(e => <option key={e} value={e}>{e}</option>)}
-                    </select>
-                    <button
-                    className="btn-eliminar"
-                    onClick={() => handleEliminarCita(cita.id)}
-                    >
-                      🗑 Eliminar
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-      
+        )}
+
+        {/* ── SECCIÓN: Calendario ── */}
         {seccion === 'calendario' && (
           <div>
             <div className="dashboard-header">
               <h2 className="dashboard-titulo">Calendario de Citas</h2>
-          </div>
-          
-          <div className="calendario-container">
-            {(() => {
-              const citasPorFecha = {}
-              citas
-                .filter(c => c.estado !== 'cancelada' && c.estado !== 'completada')
-                .forEach(c => {
-                  if (!citasPorFecha[c.fecha]) citasPorFecha[c.fecha] = []
-                  citasPorFecha[c.fecha].push(c)
-                })
-                
-              const fechasOrdenadas = Object.keys(citasPorFecha).sort()
-              
-              if (fechasOrdenadas.length === 0) {
-                return <p className="dashboard-empty">No hay citas próximas.</p>
-              }
-              
-              return fechasOrdenadas.map(fecha => (
-                <div key={fecha} className="calendario-dia">
-                  <div className="calendario-fecha">
-                    <span className="calendario-fecha-texto">
-                      📅 {new Date(fecha + 'T12:00:00').toLocaleDateString('es-CO', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </span>
-                    <span className="dashboard-badge">{citasPorFecha[fecha].length} citas</span>
-                  </div>
-                  <div className="citas-lista">
-                    {citasPorFecha[fecha]
-                      .sort((a, b) => a.hora.localeCompare(b.hora))
-                      .map(cita => (
-                        <div key={cita.id} className="cita-card">
-                          <div className="cita-hora">{cita.hora}</div>
-                          <div className="cita-info">
-                            <p className="cita-cliente">{cita.nombreCliente}</p>
-                            <p className="cita-detalle">✂ {getNombreServicio(cita.servicioId)} · 💈 {getNombreBarbero(cita.barberoId)}</p>
-                            <p className="cita-detalle">📞 {cita.telefono}</p>
-                          </div>
-                          <div className="cita-acciones">
-                            <span className="estado-badge" style={{
-                              backgroundColor: ESTADO_ESTILOS[cita.estado].bg,
-                              color: ESTADO_ESTILOS[cita.estado].color,
-                            }}>
-                              {ESTADO_ESTILOS[cita.estado].label}
-                            </span>
-                            <select
-                              className="estado-select"
-                              value={cita.estado}
-                              onChange={e => handleCambiarEstado(cita.id, e.target.value)}
-                            >
-                              {ESTADOS.map(e => <option key={e} value={e}>{e}</option>)}
-                            </select>
-                            <button
-                              className="btn-eliminar"
-                              onClick={() => handleEliminarCita(cita.id)}
-                            >
-                              🗑
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))
-              })()}
+            </div>
+            <div className="calendario-container">
+              <CalendarioCitas
+                citas={citas}
+                getNombreBarbero={getNombreBarbero}
+                getNombreServicio={getNombreServicio}
+                handleCambiarEstado={handleCambiarEstado}
+                handleEliminarCita={handleEliminarCita}
+                ESTADO_ESTILOS={ESTADO_ESTILOS}
+                ESTADOS={ESTADOS}
+              />
             </div>
           </div>
         )}
@@ -399,7 +350,7 @@ const citasFiltradas = citasActivas.filter(c => {
                     <>
                       <div className="cita-info">
                         <p className="cita-cliente">{s.nombre}</p>
-                        <p className="cita-detalle">⏱ {s.duracion} min &nbsp;·&nbsp; 💰 ${s.precio.toLocaleString()}</p>
+                        <p className="cita-detalle">⏱ {s.duracion} min &nbsp;·&nbsp; 💰 ${Number(s.precio).toLocaleString()}</p>
                       </div>
                       <div className="cita-acciones">
                         <button className="btn-outline" style={{ padding: '8px 16px', fontSize: '13px' }} onClick={() => setEditando(s)}>✏ Editar</button>
@@ -414,6 +365,151 @@ const citasFiltradas = citasActivas.filter(c => {
         )}
 
       </main>
+    </div>
+  )
+}
+
+// CALENDARIO DE CITAS
+function CalendarioCitas({ citas, getNombreBarbero, getNombreServicio, handleCambiarEstado, handleEliminarCita, ESTADO_ESTILOS, ESTADOS }) {
+  const hoy = new Date()
+  const [mesActual, setMesActual] = useState(hoy.getMonth())
+  const [anioActual, setAnioActual] = useState(hoy.getFullYear())
+  const [diaSeleccionado, setDiaSeleccionado] = useState(null)
+
+  const primerDia = new Date(anioActual, mesActual, 1).getDay()
+  const diasEnMes = new Date(anioActual, mesActual + 1, 0).getDate()
+
+  const citasDelMes = citas.filter(c => {
+    if (c.estado === 'cancelada') return false
+    const [anio, mes] = c.fecha.split('-').map(Number)
+    return anio === anioActual && mes === mesActual + 1
+  })
+
+  const citasPorDia = {}
+  citasDelMes.forEach(c => {
+    const dia = parseInt(c.fecha.split('-')[2])
+    if (!citasPorDia[dia]) citasPorDia[dia] = []
+    citasPorDia[dia].push(c)
+  })
+
+  const citasDiaSeleccionado = diaSeleccionado ? (citasPorDia[diaSeleccionado] || []) : []
+
+  const mesAnterior = () => {
+    if (mesActual === 0) { setMesActual(11); setAnioActual(a => a - 1) }
+    else setMesActual(m => m - 1)
+    setDiaSeleccionado(null)
+  }
+
+  const mesSiguiente = () => {
+    if (mesActual === 11) { setMesActual(0); setAnioActual(a => a + 1) }
+    else setMesActual(m => m + 1)
+    setDiaSeleccionado(null)
+  }
+
+  const celdas = []
+  for (let i = 0; i < primerDia; i++) celdas.push(null)
+  for (let d = 1; d <= diasEnMes; d++) celdas.push(d)
+
+  return (
+    <div>
+      {/* Navegación */}
+      <div className="calendario-nav">
+        <button className="btn-outline" style={{ padding: '8px 16px' }} onClick={mesAnterior}>
+          ← Anterior
+        </button>
+        <h3 className="calendario-mes-titulo">
+          {MESES[mesActual]} {anioActual}
+        </h3>
+        <button className="btn-outline" style={{ padding: '8px 16px' }} onClick={mesSiguiente}>
+          Siguiente →
+        </button>
+      </div>
+
+      {/* Grid */}
+      <div className="calendario-grid">
+        {DIAS_SEMANA.map(d => (
+          <div key={d} className="calendario-dia-nombre">{d}</div>
+        ))}
+        {celdas.map((dia, i) => {
+          if (!dia) return <div key={`v-${i}`} className="calendario-celda-vacia" />
+          const esDomingo = (i % 7 === 0)
+          const esHoy = dia === hoy.getDate() && mesActual === hoy.getMonth() && anioActual === hoy.getFullYear()
+          const tieneCitas = citasPorDia[dia]?.length > 0
+          const seleccionado = diaSeleccionado === dia
+          let clases = 'calendario-celda'
+          if (esDomingo) clases += ' domingo'
+          if (esHoy) clases += ' hoy'
+          if (seleccionado) clases += ' seleccionado'
+          return (
+            <div
+              key={dia}
+              className={clases}
+              onClick={() => !esDomingo && setDiaSeleccionado(seleccionado ? null : dia)}
+            >
+              {esHoy && <div className="calendario-celda-hoy-label" />}
+              <div className="calendario-celda-numero">{dia}</div>
+              {tieneCitas && (
+                <div className="calendario-puntos">
+                  {citasPorDia[dia].slice(0, 4).map((c, idx) => (
+                    <div
+                      key={idx}
+                      className="calendario-punto"
+                      style={{ backgroundColor: ESTADO_ESTILOS[c.estado]?.color || 'var(--gold)' }}
+                    />
+                  ))}
+                  {citasPorDia[dia].length > 4 && (
+                    <span className="calendario-mas">+{citasPorDia[dia].length - 4}</span>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Citas del día seleccionado */}
+      {diaSeleccionado && (
+        <div className="calendario-citas-dia">
+          <h3 className="calendario-citas-titulo">
+            📅 {diaSeleccionado} de {MESES[mesActual]} — {anioActual}
+            <span className="dashboard-badge">{citasDiaSeleccionado.length} citas</span>          </h3>
+          {citasDiaSeleccionado.length === 0 ? (
+            <p className="dashboard-empty">No hay citas para este día.</p>
+          ) : (
+            <div className="citas-lista">
+              {citasDiaSeleccionado.sort((a, b) => a.hora.localeCompare(b.hora)).map(cita => (
+                <div key={cita.id} className="cita-card">
+                  <div className="cita-hora">{cita.hora}</div>
+                  <div className="cita-info">
+                    <p className="cita-cliente">{cita.nombreCliente}</p>
+                    <p className="cita-detalle">✂ {getNombreServicio(cita.servicioId)} · 💈 {getNombreBarbero(cita.barberoId)}</p>
+                    <p className="cita-detalle">📞 {cita.telefono}</p>
+                    <p className="cita-codigo">Código: {cita.codigo}</p>
+                  </div>
+                  <div className="cita-acciones">
+                    <span className="estado-badge" style={{
+                      backgroundColor: ESTADO_ESTILOS[cita.estado].bg,
+                      color: ESTADO_ESTILOS[cita.estado].color,
+                    }}>
+                      {ESTADO_ESTILOS[cita.estado].label}
+                    </span>
+                    <select
+                      className="estado-select"
+                      value={cita.estado}
+                      onChange={e => handleCambiarEstado(cita.id, e.target.value)}
+                    >
+                      {ESTADOS.map(e => <option key={e} value={e}>{e}</option>)}
+                    </select>
+                    <button className="btn-eliminar" onClick={() => handleEliminarCita(cita.id)}>
+                      🗑
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

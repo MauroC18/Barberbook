@@ -2,7 +2,9 @@
    RESET Y BASE
    ============================================ */
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -32,7 +34,7 @@
   --radius-lg: 16px;
   --radius-xl: 24px;
   --shadow-gold: 0 8px 32px #c9a84c30;
-  --shadow-card: 0 4px 24px rgba(0,0,0,0.4);
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.4);
   --transition: all 0.25s ease;
 }
 
@@ -281,12 +283,12 @@ img {
   content: '';
   position: absolute;
   inset: 0;
-  background: rgba(255,255,255,0);
+  background: rgba(255, 255, 255, 0);
   transition: var(--transition);
 }
 
 .btn-dorado:hover::after {
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .btn-dorado:hover {
@@ -778,8 +780,15 @@ img {
 }
 
 @keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-12px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-12px);
+  }
 }
 
 .confirmacion-titulo {
@@ -889,8 +898,15 @@ img {
 }
 
 @keyframes float {
-  0%, 100% { transform: translate(-50%, -50%) scale(1); }
-  50% { transform: translate(-50%, -52%) scale(1.05); }
+
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  50% {
+    transform: translate(-50%, -52%) scale(1.05);
+  }
 }
 
 .login-contenido {
@@ -920,8 +936,15 @@ img {
 }
 
 @keyframes pulse-gold {
-  0%, 100% { box-shadow: 0 8px 32px #c9a84c30; }
-  50% { box-shadow: 0 8px 48px #c9a84c50; }
+
+  0%,
+  100% {
+    box-shadow: 0 8px 32px #c9a84c30;
+  }
+
+  50% {
+    box-shadow: 0 8px 48px #c9a84c50;
+  }
 }
 
 .login-titulo-nuevo {
@@ -1047,8 +1070,15 @@ img {
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .login-volver {
@@ -1672,39 +1702,158 @@ img {
    CALENDARIO
    ============================================ */
 
-.calendario-container {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-}
-
-.calendario-dia {
-  background-color: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-}
-
-.calendario-fecha {
+.calendario-nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 24px;
-  background-color: var(--bg-hover);
-  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
 }
 
-.calendario-fecha-texto {
-  font-size: 15px;
-  font-weight: 700;
+.calendario-mes-titulo {
   color: var(--gold);
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 1px;
   text-transform: capitalize;
 }
 
-.calendario-dia .citas-lista {
-  padding: 16px;
+.calendario-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-bottom: 32px;
 }
 
-.calendario-dia .cita-card {
-  background-color: var(--bg-secondary);
+.calendario-dia-nombre {
+  text-align: center;
+  padding: 10px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.calendario-celda-vacia {
+  min-height: 80px;
+}
+
+.calendario-celda {
+  min-height: 80px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.calendario-celda:hover {
+  border-color: var(--gold);
+  background-color: var(--bg-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px #c9a84c15;
+}
+
+.calendario-celda.seleccionado {
+  border-color: var(--gold);
+  background-color: var(--gold-bg);
+  box-shadow: var(--shadow-gold);
+}
+
+.calendario-celda.hoy {
+  border-color: var(--gold);
+}
+
+.calendario-celda.domingo {
+  opacity: 0.25;
+  cursor: default;
+  pointer-events: none;
+}
+
+.calendario-celda-numero {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  line-height: 1;
+}
+
+.calendario-celda.hoy .calendario-celda-numero {
+  color: var(--gold);
+  font-size: 17px;
+}
+
+.calendario-celda.seleccionado .calendario-celda-numero {
+  color: var(--gold);
+}
+
+.calendario-celda-hoy-label {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--gold);
+}
+
+.calendario-puntos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 4px;
+}
+
+.calendario-punto {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.calendario-celda:hover .calendario-punto {
+  transform: scale(1.2);
+}
+
+.calendario-mas {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.calendario-citas-dia {
+  animation: slideUp 0.3s ease;
+}
+
+.calendario-citas-titulo {
+  color: var(--gold);
+  font-size: 18px;
+  font-weight: 800;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .calendario-grid {
+    gap: 3px;
+  }
+
+  .calendario-celda {
+    min-height: 56px;
+    padding: 6px;
+  }
+
+  .calendario-celda-numero {
+    font-size: 13px;
+  }
+
+  .calendario-punto {
+    width: 6px;
+    height: 6px;
+  }
 }
