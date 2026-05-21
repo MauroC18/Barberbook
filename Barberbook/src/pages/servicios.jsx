@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import ServicioCard from '../components/ServicioCard'
+import ServicioCard from '../components/servicioCard'
 import { getServicios } from '../services/api'
 
 function Servicios() {
