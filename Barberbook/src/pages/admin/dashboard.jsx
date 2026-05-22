@@ -43,7 +43,7 @@ function Dashboard() {
     setCargando(true)
     const [citasData, serviciosData, barberosData] = await Promise.all([
       getCitas(),
-      getServicios()
+      getServicios(),
       getBarberos()
     ])
     setCitas(citasData) 
