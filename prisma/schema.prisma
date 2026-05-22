@@ -21,6 +21,7 @@ model Servicio {
   nombre    String
   duracion  Int
   precio    Int
+  emoji     String   @default("✂️")
   citas     Cita[]
   createdAt DateTime @default(now())
 }

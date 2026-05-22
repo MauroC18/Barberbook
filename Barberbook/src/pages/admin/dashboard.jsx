@@ -1,12 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getCitas, actualizarEstadoCita, getServicios, crearServicio, actualizarServicio, eliminarServicio, eliminarCita } from '../../services/api'
+import { getCitas, actualizarEstadoCita, getServicios, crearServicio, actualizarServicio, eliminarServicio, eliminarCita, getBarberos, crearBarbero, eliminarBarbero, actualizarBarbero } from '../../services/api'
 
-// ── CONSTANTES GLOBALES ──
-const BARBEROS = [
-  { id: 1, nombre: 'Carlos Mendoza' },
-  { id: 2, nombre: 'Andrés Pérez' },
-]
 
 const ESTADOS = ['pendiente', 'confirmada', 'completada', 'cancelada']
 
@@ -34,8 +29,11 @@ function Dashboard() {
   const [citas, setCitas] = useState([])
   const [servicios, setServicios] = useState([])
   const [cargando, setCargando] = useState(true)
-  const [nuevoServicio, setNuevoServicio] = useState({ nombre: '', duracion: '', precio: '' })
+  const [nuevoServicio, setNuevoServicio] = useState({ nombre: '', duracion: '', precio: '', emoji: '✂️' })
   const [editando, setEditando] = useState(null)
+  const [barberos, setBarberos] = useState([])
+  const [nuevoBarbero, setNuevoBarbero] = useState({ nombre: '', especialidad: '', foto: '' })
+  const [editandoBarbero, setEditandoBarbero] = useState(null)
 
   useEffect(() => {
     cargarDatos()
@@ -43,12 +41,14 @@ function Dashboard() {
 
   const cargarDatos = async () => {
     setCargando(true)
-    const [citasData, serviciosData] = await Promise.all([
+    const [citasData, serviciosData, barberosData] = await Promise.all([
       getCitas(),
       getServicios()
+      getBarberos()
     ])
-    setCitas(citasData)
+    setCitas(citasData) 
     setServicios(serviciosData)
+    setBarberos(barberosData)
     setCargando(false)
   }
 
@@ -86,7 +86,7 @@ function Dashboard() {
     setCitas(prev => prev.filter(c => c.id !== id))
   }
 
-  const getNombreBarbero = (id) => BARBEROS.find(b => b.id === id)?.nombre || 'N/A'
+  const getNombreBarbero = (id) => barberos.find(b => b.id === id)?.nombre || 'N/A'
   const getNombreServicio = (id) => servicios.find(s => s.id === id)?.nombre || 'N/A'
 
   // Fechas y lógica para la sección de "Citas del día"
@@ -109,6 +109,25 @@ function Dashboard() {
     return porBarbero && porFecha && porEstado
   })
 
+  const handleAgregarBarbero = async () => {
+    if (!nuevoBarbero.nombre || !nuevoBarbero.especialidad) return
+    const creado = await crearBarbero(nuevoBarbero)
+    setBarberos(prev => [...prev, creado])
+    setNuevoBarbero({ nombre: '', especialidad: '', foto: '' })
+  }
+
+  const handleEliminarBarbero = async (id) => {
+    if (!window.confirm('¿Eliminar este barbero?')) return
+    await eliminarBarbero(id)
+    setBarberos(prev => prev.filter(b => b.id !== id))
+  }
+
+  const handleGuardarEdicionBarbero = async () => {
+    const actualizado = await actualizarBarbero(editandoBarbero.id, editandoBarbero)
+    setBarberos(prev => prev.map(b => b.id === editandoBarbero.id ? actualizado : b))
+    setEditandoBarbero(null)
+  }
+
   if (cargando) return (
     <div style={{ textAlign: 'center', padding: '80px', color: '#888' }}>
       Cargando datos...
@@ -128,6 +147,7 @@ function Dashboard() {
             { id: 'barberos', label: '💈 Por barbero' },
             { id: 'servicios', label: '✂ Servicios' },
             { id: 'calendario', label: '📅 Calendario' },
+            { id: 'barberos-admin', label: '💈 Barberos' },
           ].map(item => (
             <button
               key={item.id}
@@ -309,29 +329,53 @@ function Dashboard() {
             </div>
             <div className="servicio-form-card">
               <p className="paso-label-seccion">Agregar nuevo servicio</p>
+              
               <div className="servicio-form-grid">
-                <input
-                  className="input-field"
-                  placeholder="Nombre del servicio"
-                  value={nuevoServicio.nombre}
-                  onChange={e => setNuevoServicio({ ...nuevoServicio, nombre: e.target.value })}
-                />
-                <input
-                  className="input-field"
-                  placeholder="Duración (min)"
-                  type="number"
-                  value={nuevoServicio.duracion}
-                  onChange={e => setNuevoServicio({ ...nuevoServicio, duracion: e.target.value })}
-                />
-                <input
-                  className="input-field"
-                  placeholder="Precio ($)"
-                  type="number"
-                  value={nuevoServicio.precio}
-                  onChange={e => setNuevoServicio({ ...nuevoServicio, precio: e.target.value })}
-                />
-                <button className="btn-dorado" onClick={handleAgregarServicio}>+ Agregar</button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label className="login-input-label">Nombre</label>
+                  <input
+                    className="input-field"
+                    placeholder="Nombre del servicio"
+                    value={nuevoServicio.nombre}
+                    onChange={e => setNuevoServicio({ ...nuevoServicio, nombre: e.target.value })}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label className="login-input-label">Duración (min)</label>
+                  <input
+                    className="input-field"
+                    placeholder="30"
+                    type="number"
+                    value={nuevoServicio.duracion}
+                    onChange={e => setNuevoServicio({ ...nuevoServicio, duracion: e.target.value })}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label className="login-input-label">Precio ($)</label>
+                  <input
+                    className="input-field"
+                    placeholder="15000"
+                    type="number"
+                    value={nuevoServicio.precio}
+                    onChange={e => setNuevoServicio({ ...nuevoServicio, precio: e.target.value })}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label className="login-input-label">Emoji</label>
+                  <input
+                    className="input-field"
+                    placeholder="✂️"
+                    value={nuevoServicio.emoji}
+                    onChange={e => setNuevoServicio({ ...nuevoServicio, emoji: e.target.value })}
+                    style={{ fontSize: '20px', textAlign: 'center' }}
+                  />
+                </div>
+                <button className="btn-dorado" onClick={handleAgregarServicio} style={{ alignSelf: 'flex-end' }}>
+                  + Agregar
+                </button>
               </div>
+
+
             </div>
             <div className="citas-lista">
               {servicios.map(s => (
@@ -368,6 +412,110 @@ function Dashboard() {
     </div>
   )
 }
+
+        {seccion === 'barberos-admin' && (
+          <div>
+            <div className="dashboard-header">
+              <h2 className="dashboard-titulo">Gestionar Barberos</h2>
+            </div>
+
+            {/* Formulario agregar */}
+            <div className="servicio-form-card">
+              <p className="paso-label-seccion">Agregar nuevo barbero</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 2fr auto', gap: '12px', alignItems: 'flex-end' }}>
+                <div>
+                  <label className="login-input-label">Nombre</label>
+                  <input
+                    className="input-field"
+                    placeholder="Nombre del barbero"
+                    value={nuevoBarbero.nombre}
+                    onChange={e => setNuevoBarbero({ ...nuevoBarbero, nombre: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="login-input-label">Especialidad</label>
+                  <input
+                    className="input-field"
+                    placeholder="Ej: Cortes clásicos"
+                    value={nuevoBarbero.especialidad}
+                    onChange={e => setNuevoBarbero({ ...nuevoBarbero, especialidad: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="login-input-label">URL Foto (opcional)</label>
+                  <input
+                    className="input-field"
+                    placeholder="https://..."
+                    value={nuevoBarbero.foto}
+                    onChange={e => setNuevoBarbero({ ...nuevoBarbero, foto: e.target.value })}
+                  />
+                </div>
+                <button className="btn-dorado" onClick={handleAgregarBarbero}>
+                  + Agregar
+                </button>
+              </div>
+            </div>
+
+            {/* Lista de barberos */}
+            <div className="citas-lista">
+              {barberos.map(b => (
+                <div key={b.id} className="cita-card">
+                  {editandoBarbero?.id === b.id ? (
+                    <div className="servicio-edit-form">
+                      <input
+                        className="input-field"
+                        value={editandoBarbero.nombre}
+                        onChange={e => setEditandoBarbero({ ...editandoBarbero, nombre: e.target.value })}
+                        placeholder="Nombre"
+                      />
+                      <input
+                        className="input-field"
+                        value={editandoBarbero.especialidad}
+                        onChange={e => setEditandoBarbero({ ...editandoBarbero, especialidad: e.target.value })}
+                        placeholder="Especialidad"
+                      />
+                      <input
+                        className="input-field"
+                        value={editandoBarbero.foto}
+                        onChange={e => setEditandoBarbero({ ...editandoBarbero, foto: e.target.value })}
+                        placeholder="URL foto"
+                      />
+                      <div className="btn-group">
+                        <button className="btn-dorado" onClick={handleGuardarEdicionBarbero}>Guardar</button>
+                        <button className="btn-outline" onClick={() => setEditandoBarbero(null)}>Cancelar</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <img
+                        src={b.foto || `https://api.dicebear.com/7.x/adventurer/svg?seed=${b.nombre}`}
+                        alt={b.nombre}
+                        className="barbero-foto"
+                        style={{ width: '56px', height: '56px' }}
+                      />
+                      <div className="cita-info">
+                        <p className="cita-cliente">{b.nombre}</p>
+                        <p className="cita-detalle">✂ {b.especialidad}</p>
+                      </div>
+                      <div className="cita-acciones">
+                        <button
+                          className="btn-outline"
+                          style={{ padding: '8px 16px', fontSize: '13px' }}
+                          onClick={() => setEditandoBarbero(b)}
+                        >
+                          ✏ Editar
+                        </button>
+                        <button className="btn-eliminar" onClick={() => handleEliminarBarbero(b.id)}>
+                          🗑 Eliminar
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
 // CALENDARIO DE CITAS
 function CalendarioCitas({ citas, getNombreBarbero, getNombreServicio, handleCambiarEstado, handleEliminarCita, ESTADO_ESTILOS, ESTADOS }) {

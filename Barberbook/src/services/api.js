@@ -37,6 +37,32 @@ export const getBarberos = async () => {
   return res.json()
 }
 
+export const crearBarbero = async (barbero) => {
+  const res = await fetch(`${BASE_URL}/barberos`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(barbero)
+  })
+  return res.json()
+}
+
+export const eliminarBarbero = async (id) => {
+  const res = await fetch(`${BASE_URL}/barberos/${id}`, {
+    method: 'DELETE'
+  })
+  return res.json()
+}
+
+export const actualizarBarbero = async (id, barbero) => {
+  const res = await fetch(`${BASE_URL}/barberos/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(barbero)
+  })
+  return res.json()
+}
+
+
 // ── CITAS ──────────────────────────────────
 export const getCitas = async () => {
   const res = await fetch(`${BASE_URL}/citas`)
