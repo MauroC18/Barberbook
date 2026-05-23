@@ -255,6 +255,7 @@ function Dashboard() {
             { id: 'barberos', label: '💈 Por barbero' },
             { id: 'barberos-admin', label: '👥 Barberos' },
             { id: 'servicios', label: '✂ Servicios' },
+            { id: 'historial', label: '📜 Historial' },
           ].map(item => (
             <button key={item.id} className={`sidebar-btn ${seccion === item.id ? 'activo' : ''}`} onClick={() => setSeccion(item.id)}>
               {item.label}
@@ -491,6 +492,46 @@ function Dashboard() {
             </div>
           </div>
         )}
+
+
+        {/* ── Historial ── */}
+        {seccion === 'historial' && (
+          <div>
+            <div className="dashboard-header">
+              <h2 className="dashboard-titulo">Historial de Citas</h2>
+              <span className="dashboard-badge">{citas.filter(c => c.estado === 'cancelada' || c.estado === 'completada' || c.fecha < fechaHoy).length} citas</span>
+            </div>
+
+            <div className="citas-lista">
+              {citas
+                .filter(c => c.estado === 'cancelada' || c.estado === 'completada' || c.fecha < fechaHoy)
+                .sort((a, b) => b.fecha.localeCompare(a.fecha))
+                .map(cita => (
+                  <div key={cita.id} className="cita-card">
+                    <div className="cita-hora">{cita.hora}</div>
+                    <div className="cita-info">
+                      <p className="cita-cliente">{cita.nombreCliente}</p>
+                      <p className="cita-detalle">📞 {cita.telefono}</p>
+                      <p className="cita-detalle">✂ {getNombreServicio(cita.servicioId)} · 💈 {getNombreBarbero(cita.barberoId)}</p>
+                      <p className="cita-detalle">📅 {cita.fecha}</p>
+                      <p className="cita-codigo">Código: {cita.codigo}</p>
+                    </div>
+                    <div className="cita-acciones">
+                      <span className="estado-badge" style={{
+                        backgroundColor: ESTADO_ESTILOS[cita.estado].bg,
+                        color: ESTADO_ESTILOS[cita.estado].color,
+                      }}>
+                        {ESTADO_ESTILOS[cita.estado].label}
+                      </span>
+                      <button className="btn-eliminar" onClick={() => handleEliminarCita(cita.id)}>
+                        🗑 Eliminar
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
       </main>
     </div>
