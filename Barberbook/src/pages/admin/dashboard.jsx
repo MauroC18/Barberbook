@@ -183,7 +183,12 @@ function Dashboard() {
   }
 
   const handleEliminarServicio = async (id) => {
-    await eliminarServicio(id)
+    if (!window.confirm('¿Estás seguro de eliminar este servicio?')) return
+    const resultado = await eliminarServicio(id)
+    if (resultado.error) {
+      alert(resultado.error)
+      return
+    }
     setServicios(prev => prev.filter(s => s.id !== id))
   }
 
@@ -460,9 +465,10 @@ function Dashboard() {
                 <div key={s.id} className="cita-card">
                   {editando?.id === s.id ? (
                     <div className="servicio-edit-form">
-                      <input className="input-field" value={editando.nombre} onChange={e => setEditando({ ...editando, nombre: e.target.value })} />
-                      <input className="input-field" type="number" value={editando.duracion} onChange={e => setEditando({ ...editando, duracion: e.target.value })} />
-                      <input className="input-field" type="number" value={editando.precio} onChange={e => setEditando({ ...editando, precio: e.target.value })} />
+                      <input className="input-field" placeholder="Nombre" value={editando.nombre} onChange={e => setEditando({ ...editando, nombre: e.target.value })} />
+                      <input className="input-field" type="number" placeholder="Duración" value={editando.duracion} onChange={e => setEditando({ ...editando, duracion: e.target.value })} />
+                      <input className="input-field" type="number" placeholder="Precio" value={editando.precio} onChange={e => setEditando({ ...editando, precio: e.target.value })} />
+                      <input className="input-field" placeholder="Emoji" value={editando.emoji || '✂️'} onChange={e => setEditando({ ...editando, emoji: e.target.value })} style={{ fontSize: '20px', textAlign: 'center', width: '80px' }} />
                       <div className="btn-group">
                         <button className="btn-dorado" onClick={handleGuardarEdicion}>Guardar</button>
                         <button className="btn-outline" onClick={() => setEditando(null)}>Cancelar</button>
